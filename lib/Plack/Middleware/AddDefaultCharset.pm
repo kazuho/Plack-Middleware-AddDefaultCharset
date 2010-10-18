@@ -12,21 +12,24 @@ our $VERSION = '0.01';
 
 sub call {
     my ($self, $env) = @_;
-    
-    my $res = $self->app->($env);
-    my $headers = $res->[1];
-    for (my $i = 0; $i < @$headers; $i += 2) {
-        if (lc($headers->[$i]) eq 'content-type') {
-            my $cur_type = $headers->[$i + 1];
-            if ($cur_type =~ m{^text/(html|plain)}
-                    && $cur_type !~ /;\s*charset=/) {
-                $headers->[$i + 1] = "$cur_type; charset=" . $self->charset;
+    $self->response_cb(
+        $self->app->($env),
+        sub {
+            my $res = shift;
+            my $headers = $res->[1];
+            for (my $i = 0; $i < @$headers; $i += 2) {
+                if (lc($headers->[$i]) eq 'content-type') {
+                    my $cur_type = $headers->[$i + 1];
+                    if ($cur_type =~ m{^text/(html|plain)}
+                            && $cur_type !~ /;\s*charset=/) {
+                        $headers->[$i + 1] =
+                            "$cur_type; charset=" . $self->charset;
+                    }
+                    last;
+                }
             }
-            last;
-        }
-    }
-    
-    $res;
+        },
+    );
 }
 
 1;
